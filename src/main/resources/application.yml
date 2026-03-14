@@ -6,6 +6,26 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
+business:
+  initial-balance: 500000.00
+  from-email: ${SES_MAIL}
+  twilio-phone: ${TWILIO_PHONE}
+
+dynamodbAws:
+  customers-table: btg-funds-management-customers-dev
+  funds-table: btg-funds-management-funds-dev
+  transactions-table: btg-funds-management-transactions-dev
+
+aws:
+  region: ${AWS_REGION}
+  endpoint: ${AWS_ENDPOINT:}
+  access-key: ${AWS_ACCESS_KEY_ID}
+  secret-key: ${AWS_SECRET_ACCESS_KEY}
+
+twilio:
+  sid: ${TWILIO_SID}
+  token: ${TWILIO_TOKEN}
+
 security:
   jwt:
     secret: ${JWT_SECRET:invesment_btg_funds_senior_secret_key_2026}
