@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: btg-funds
+  main:
+    web-application-type: reactive
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:invesment_btg_funds_senior_secret_key_2026}
+    expiration: ${JWT_EXPIRATION:7200000}
+  auth:
+    demo-username: admin
+    demo-password: funds2026
+
+logging:
+  level:
+    root: INFO
+    com.btg.funds: DEBUG
