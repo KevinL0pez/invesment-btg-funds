@@ -34,7 +34,7 @@ El proyecto implementa arquitectura hexagonal para separar claramente el dominio
 4. El caso de uso usa **Puertos de Salida** (`ports.out`) para persistencia/notificaciones.
 5. Adaptadores de salida resuelven esos puertos (DynamoDB, SES, Twilio).
 
-## Patrones de diseno y decisiones de arquitectura
+## Patrones de diseño y decisiones de arquitectura
 
 ### 1) Ports and Adapters (Hexagonal)
 
@@ -103,7 +103,7 @@ src/main/java/com/btg/funds
       \- security
 ```
 
-## Instalacion y ejecucion
+## Instalación y ejecución
 
 ## Requisitos
 
@@ -115,7 +115,7 @@ src/main/java/com/btg/funds
 ### 1) Clonar e instalar dependencias
 
 ```bash
-git clone <URL_DEL_REPO>
+git clone https://github.com/KevinL0pez/invesment-btg-funds.git
 cd funds
 mvn clean compile
 ```
