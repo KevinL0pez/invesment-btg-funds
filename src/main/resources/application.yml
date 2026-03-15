@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: btg-funds
   main:
@@ -7,32 +9,34 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
 business:
-  initial-balance: 500000.00
+  initial-balance: ${BUSINESS_INITIAL_BALANCE}
   from-email: ${SES_MAIL}
   twilio-phone: ${TWILIO_PHONE}
 
 dynamodbAws:
-  customers-table: btg-funds-management-customers-dev
-  funds-table: btg-funds-management-funds-dev
-  transactions-table: btg-funds-management-transactions-dev
+  customers-table: ${DYNAMODB_CUSTOMERS_TABLE}
+  funds-table: ${DYNAMODB_FUNDS_TABLE}
+  transactions-table: ${DYNAMODB_TRANSACTIONS_TABLE}
 
 aws:
   region: ${AWS_REGION}
-  endpoint: ${AWS_ENDPOINT:}
+  endpoint: ${AWS_ENDPOINT}
+  ses-endpoint: ${AWS_SES_ENDPOINT:}
   access-key: ${AWS_ACCESS_KEY_ID}
   secret-key: ${AWS_SECRET_ACCESS_KEY}
 
 twilio:
   sid: ${TWILIO_SID}
   token: ${TWILIO_TOKEN}
+  messaging-service-sid: ${TWILIO_MESSAGING_SERVICE_SID:}
 
 security:
   jwt:
-    secret: ${JWT_SECRET:invesment_btg_funds_senior_secret_key_2026}
-    expiration: ${JWT_EXPIRATION:7200000}
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION}
   auth:
-    demo-username: admin
-    demo-password: funds2026
+    demo-username: ${DEMO_USERNAME}
+    demo-password: ${DEMO_PASSWORD}
 
 logging:
   level:

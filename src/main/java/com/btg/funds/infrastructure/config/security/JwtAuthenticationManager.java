@@ -1,5 +1,7 @@
 package com.btg.funds.infrastructure.config.security;
 
+import com.btg.funds.infrastructure.security.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,7 +46,10 @@ import java.util.Collections;
  * </pre>
  */
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
+
+    private final JwtService jwtService;
 
     /**
      * Construye un objeto {@link Authentication} a partir del token JWT
@@ -57,6 +62,20 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         String token = authentication.getCredentials().toString();
-        return Mono.just(new UsernamePasswordAuthenticationToken(token, token, Collections.emptyList()));
+
+        if (!jwtService.validate(token)) {
+            return Mono.empty();
+        }
+
+        String username = jwtService.getUsername(token);
+        if (username == null || username.isBlank()) {
+            return Mono.empty();
+        }
+
+        return Mono.just(new UsernamePasswordAuthenticationToken(
+                username,
+                token,
+                Collections.emptyList()
+        ));
     }
 }

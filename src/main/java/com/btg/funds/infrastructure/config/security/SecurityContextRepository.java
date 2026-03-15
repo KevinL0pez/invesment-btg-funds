@@ -1,7 +1,7 @@
 package com.btg.funds.infrastructure.config.security;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.hc.core5.http.HttpHeaders;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -41,7 +41,7 @@ public class SecurityContextRepository implements ServerSecurityContextRepositor
      * Administrador de autenticación encargado de validar el token JWT
      * y construir el objeto correspondiente.
      */
-    private final JwtAuthenticationManager authManager;
+    private final JwtAuthenticationManager jwtAuthenticationManager;
 
     /**
      * No persiste el {@link SecurityContext}, ya que el sistema utiliza
@@ -79,7 +79,7 @@ public class SecurityContextRepository implements ServerSecurityContextRepositor
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            return authManager.authenticate(new UsernamePasswordAuthenticationToken(token, token))
+            return jwtAuthenticationManager.authenticate(new UsernamePasswordAuthenticationToken(token, token))
                     .map(SecurityContextImpl::new);
         }
         return Mono.empty();

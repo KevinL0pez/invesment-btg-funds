@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 
 /**
@@ -120,10 +122,16 @@ public class AuthController {
         }
 
         // Validación de credenciales demo configurable via propiedades.
-        if (demoUsername.equals(username) && demoPassword.equals(password)) {
+        if (secureEquals(demoUsername, username) && secureEquals(demoPassword, password)) {
             return Mono.just(Map.of("token", jwtService.generateToken(username)));
         }
 
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas");
+    }
+
+    private boolean secureEquals(String expected, String provided) {
+        byte[] expectedBytes = expected.getBytes(StandardCharsets.UTF_8);
+        byte[] providedBytes = provided.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, providedBytes);
     }
 }
