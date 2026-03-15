@@ -156,6 +156,21 @@ La API queda disponible en:
 - OpenAPI: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
+## Coleccion de Postman
+
+Se incluye la coleccion:
+
+- `BtgFunds.postman_collection.json`
+
+Pasos recomendados:
+
+1. Importar la coleccion en Postman.
+2. Crear una variable de coleccion `baseUrl`.
+3. Configurar `baseUrl` segun entorno:
+   - Local: `http://localhost:8080`
+   - AWS: `http://<tu-alb>.us-east-1.elb.amazonaws.com`
+4. Ejecutar primero el login para obtener JWT y reutilizarlo en endpoints protegidos.
+
 ## Pruebas unitarias
 
 ### Ejecutar tests

@@ -1,0 +1,166 @@
+{
+  "info": {
+    "_postman_id": "c36a0493-5fac-4be5-9a1d-25eb9829ddf6",
+    "name": "BtgFunds",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19773849"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"admindev\",\r\n    \"password\": \"fundsdev2026\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://btg-funds-alb-2005909629.us-east-1.elb.amazonaws.com/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "btg-funds-alb-2005909629",
+            "us-east-1",
+            "elb",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Suscribirse a un fondo",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbmRldiIsImlhdCI6MTc3MzU1NDc2MCwiZXhwIjoxNzczNTYxOTYwfQ.FNA4UuM9OrN2q8JMbr2nTguUAYZaprTwxXuZ9n2oipQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"customerId\": \"kevin.lopez@example.com\",\r\n    \"fundId\": \"1\",\r\n    \"notificationType\": \"EMAIL\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://btg-funds-alb-2005909629.us-east-1.elb.amazonaws.com/api/customers/kevinavs.2001@gmail.com/subscribe",
+          "protocol": "http",
+          "host": [
+            "btg-funds-alb-2005909629",
+            "us-east-1",
+            "elb",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "api",
+            "customers",
+            "kevinavs.2001@gmail.com",
+            "subscribe"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cancelar suscripción a un fondo",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MzUyNjMxMiwiZXhwIjoxNzczNTMzNTEyfQ.0DEwuoU8-SWHndp4LRMNUvM0RpbvxUR6LkiRBQR3lAw",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"fundId\": \"4\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://btg-funds-alb-2005909629.us-east-1.elb.amazonaws.com/api/customers/kevinavs.2001@gmail.com/unsubscribe",
+          "protocol": "http",
+          "host": [
+            "btg-funds-alb-2005909629",
+            "us-east-1",
+            "elb",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "api",
+            "customers",
+            "kevinavs.2001@gmail.com",
+            "unsubscribe"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Fondos suscritos",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MzU0OTA1OSwiZXhwIjoxNzczNTU2MjU5fQ.4FD9Ux-gPSem3eEectCHn2ozFxksAdNGMNovaRZkpT0",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://btg-funds-alb-2005909629.us-east-1.elb.amazonaws.com/api/customers/kevinavs.2001@gmail.com/customer-funds",
+          "protocol": "http",
+          "host": [
+            "btg-funds-alb-2005909629",
+            "us-east-1",
+            "elb",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "api",
+            "customers",
+            "kevinavs.2001@gmail.com",
+            "customer-funds"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
