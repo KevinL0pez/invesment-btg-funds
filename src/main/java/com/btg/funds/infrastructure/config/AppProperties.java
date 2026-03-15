@@ -35,6 +35,7 @@ public class AppProperties {
         private String sesEndpoint;
         private String accessKey;
         private String secretKey;
+        private String sessionToken;
 
         @Data
         public static class DynamoDbTableProperties {

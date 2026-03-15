@@ -22,8 +22,9 @@ aws:
   region: ${AWS_REGION}
   endpoint: ${AWS_ENDPOINT}
   ses-endpoint: ${AWS_SES_ENDPOINT:}
-  access-key: ${AWS_ACCESS_KEY_ID}
-  secret-key: ${AWS_SECRET_ACCESS_KEY}
+  access-key: ${AWS_ACCESS_KEY_ID:}
+  secret-key: ${AWS_SECRET_ACCESS_KEY:}
+  session-token: ${AWS_SESSION_TOKEN:}
 
 twilio:
   sid: ${TWILIO_SID}

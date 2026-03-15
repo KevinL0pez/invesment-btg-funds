@@ -9,6 +9,7 @@ import com.btg.funds.domain.exception.InsufficientBalanceException;
 import com.btg.funds.domain.exception.SubscriptionNotFoundException;
 import com.btg.funds.domain.model.SubscriptionRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class CustomerHandler {
     private final SubscribeFundUseCase subscribeFundUseCase;
@@ -87,31 +89,38 @@ public class CustomerHandler {
         String normalizedMessage = message.toLowerCase();
 
         if (error instanceof IllegalArgumentException) {
+            log.warn("Solicitud invalida en CustomerHandler: {}", message);
             return error(HttpStatus.BAD_REQUEST, message);
         }
 
         if (error instanceof InsufficientBalanceException) {
+            log.warn("Saldo insuficiente en CustomerHandler: {}", message);
             return error(HttpStatus.BAD_REQUEST, message);
         }
 
         if (error instanceof SubscriptionNotFoundException) {
+            log.warn("Suscripcion no encontrada en CustomerHandler: {}", message);
             return error(HttpStatus.BAD_REQUEST, message);
         }
 
         if (error instanceof CustomerNotFoundException || error instanceof FundNotFoundException) {
+            log.warn("Recurso no encontrado en CustomerHandler: {}", message);
             return error(HttpStatus.NOT_FOUND, message);
         }
 
         if (normalizedMessage.contains("no encontrado") || normalizedMessage.contains("no existe")) {
+            log.warn("Error de negocio no encontrado en CustomerHandler: {}", message);
             return error(HttpStatus.NOT_FOUND, message);
         }
 
         if (normalizedMessage.contains("insuficiente")
                 || normalizedMessage.contains("no esta vinculado")
                 || normalizedMessage.contains("saldo disponible")) {
+            log.warn("Error de negocio en CustomerHandler: {}", message);
             return error(HttpStatus.BAD_REQUEST, message);
         }
 
+        log.error("Error inesperado en CustomerHandler", error);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno procesando la solicitud");
     }
 

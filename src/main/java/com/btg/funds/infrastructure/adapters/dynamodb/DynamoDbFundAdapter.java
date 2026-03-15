@@ -29,8 +29,12 @@ public class DynamoDbFundAdapter implements FundRepository {
     public Mono<Fund> findById(String id) {
         Key key = Key.builder().partitionValue(id).build();
         return Mono.fromFuture(fundTable.getItem(key))
-                .map(this::mapToDomain)
-                .switchIfEmpty(Mono.error(new FundNotFoundException(id)));
+                .flatMap(entity -> {
+                    if (entity == null) {
+                        return Mono.error(new FundNotFoundException(id));
+                    }
+                    return Mono.just(mapToDomain(entity));
+                });
     }
 
     @Override

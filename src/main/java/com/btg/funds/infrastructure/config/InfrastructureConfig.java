@@ -7,7 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
@@ -29,13 +32,31 @@ public class InfrastructureConfig {
         this.props = props;
     }
 
-    private StaticCredentialsProvider getCredentials() {
-        return StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(
-                        props.getAws().getAccessKey(),
-                        props.getAws().getSecretKey()
-                )
-        );
+    private AwsCredentialsProvider getCredentialsProvider() {
+        String accessKey = props.getAws().getAccessKey();
+        String secretKey = props.getAws().getSecretKey();
+        String sessionToken = props.getAws().getSessionToken();
+
+        boolean hasAccessKey = accessKey != null && !accessKey.isBlank();
+        boolean hasSecretKey = secretKey != null && !secretKey.isBlank();
+        boolean hasSessionToken = sessionToken != null && !sessionToken.isBlank();
+
+        if (hasAccessKey && hasSecretKey) {
+            if (hasSessionToken) {
+                log.info("Usando credenciales AWS estáticas con session token.");
+                return StaticCredentialsProvider.create(
+                        AwsSessionCredentials.create(accessKey.trim(), secretKey.trim(), sessionToken.trim())
+                );
+            }
+
+            log.info("Usando credenciales AWS estáticas sin session token.");
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKey.trim(), secretKey.trim())
+            );
+        }
+
+        log.info("Usando DefaultCredentialsProvider (recomendado para ECS/IAM Role).");
+        return DefaultCredentialsProvider.create();
     }
 
     @Bean
@@ -44,7 +65,7 @@ public class InfrastructureConfig {
         return DynamoDbAsyncClient.builder()
                 .region(Region.of(props.getAws().getRegion()))
                 .endpointOverride(URI.create(props.getAws().getEndpoint()))
-                .credentialsProvider(getCredentials())
+                .credentialsProvider(getCredentialsProvider())
                 .httpClientBuilder(NettyNioAsyncHttpClient.builder())
                 .build();
     }
@@ -62,12 +83,7 @@ public class InfrastructureConfig {
     public SesAsyncClient sesAsyncClient(AppProperties props) {
         var builder = SesAsyncClient.builder()
                 .region(Region.of(props.getAws().getRegion()))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(
-                                props.getAws().getAccessKey(),
-                                props.getAws().getSecretKey()
-                        )
-                ));
+                .credentialsProvider(getCredentialsProvider());
 
         String sesEndpoint = props.getAws().getSesEndpoint();
         if (sesEndpoint != null && !sesEndpoint.isBlank()) {

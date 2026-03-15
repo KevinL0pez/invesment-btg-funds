@@ -32,9 +32,12 @@ public class DynamoDbCustomerAdapter implements CustomerRepository {
     public Mono<Customer> findById(String id) {
         log.info("🔍 Buscando cliente: {}", id);
         return Mono.fromFuture(customerTable.getItem(Key.builder().partitionValue(id).build()))
-                .map(this::toDomain)
-                .doOnSuccess(c -> {
-                    if (c == null) log.warn("Cliente no encontrado en DB: {}", id);
+                .flatMap(entity -> {
+                    if (entity == null) {
+                        log.warn("Cliente no encontrado en DB: {}", id);
+                        return Mono.empty();
+                    }
+                    return Mono.just(toDomain(entity));
                 });
     }
 
@@ -59,7 +62,6 @@ public class DynamoDbCustomerAdapter implements CustomerRepository {
     }
 
     private Customer toDomain(CustomerEntity entity) {
-        if (entity == null) return null;
         return Customer.builder()
                 .id(entity.getId())
                 .name(entity.getName())

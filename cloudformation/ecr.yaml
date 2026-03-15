@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Crea repositorio ECR para backend funds
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: btg-funds-backend
+    Description: Nombre del repositorio ECR
+  MaxImagesToKeep:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 50
+    Description: Cantidad maxima de imagenes para conservar en ECR
+
+Resources:
+  BackendEcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Mantener solo las ultimas ${MaxImagesToKeep} imagenes",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": ${MaxImagesToKeep}
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  RepositoryUri:
+    Description: URI del repositorio ECR
+    Value: !GetAtt BackendEcrRepository.RepositoryUri
+  RepositoryNameOut:
+    Description: Nombre del repositorio ECR
+    Value: !Ref BackendEcrRepository

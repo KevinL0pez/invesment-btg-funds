@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Despliegue backend funds en ECS Fargate + ALB
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: btg-funds
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC existente para desplegar ALB y ECS
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Minimo 2 subnets publicas en AZ distintas
+  ContainerImage:
+    Type: String
+    Description: URI de imagen Docker (ej. 123456789012.dkr.ecr.us-east-1.amazonaws.com/btg-funds-backend:latest)
+  ContainerPort:
+    Type: Number
+    Default: 8080
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 2
+    Description: Cantidad de tareas ECS para prueba tecnica
+  HealthCheckGracePeriodSeconds:
+    Type: Number
+    Default: 180
+    MinValue: 0
+    MaxValue: 900
+    Description: Tiempo de gracia para health checks de ALB mientras la app inicia
+  Cpu:
+    Type: Number
+    Default: 256
+    AllowedValues: [256, 512, 1024, 2048, 4096]
+    Description: CPU de la tarea Fargate. Para prueba tecnica usar 256.
+  Memory:
+    Type: Number
+    Default: 512
+    AllowedValues: [512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192]
+    Description: Memoria de la tarea Fargate. Para prueba tecnica usar 512.
+  LogRetentionInDays:
+    Type: Number
+    Default: 3
+    AllowedValues: [1, 3, 5, 7, 14, 30]
+    Description: Retencion de logs en CloudWatch para reducir costo
+  SpringProfilesActive:
+    Type: String
+    Default: prod
+  BusinessInitialBalance:
+    Type: String
+    Default: "500000.00"
+  SesMail:
+    Type: String
+    Description: Correo remitente verificado en SES
+  TwilioPhone:
+    Type: String
+    Default: ""
+  DynamodbCustomersTable:
+    Type: String
+    Default: btg-funds-customers-dev
+  DynamodbFundsTable:
+    Type: String
+    Default: btg-funds-funds-dev
+  DynamodbTransactionsTable:
+    Type: String
+    Default: btg-funds-transactions-dev
+  TwilioSid:
+    Type: String
+    NoEcho: true
+    Default: ""
+  TwilioToken:
+    Type: String
+    NoEcho: true
+    Default: ""
+  TwilioMessagingServiceSid:
+    Type: String
+    NoEcho: true
+    Default: ""
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  JwtExpiration:
+    Type: String
+    Default: "7200000"
+  DemoUsername:
+    Type: String
+    Default: admin
+  DemoPassword:
+    Type: String
+    NoEcho: true
+    Default: funds2026
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${ProjectName}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ${ProjectName}-cluster
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  ServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para ECS Service
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref ContainerPort
+          ToPort: !Ref ContainerPort
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${ProjectName}-alb
+      Scheme: internet-facing
+      Type: application
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets: !Ref PublicSubnets
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${ProjectName}-tg
+      VpcId: !Ref VpcId
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /v3/api-docs
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: 200-399
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  EcsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-ecs-execution-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-ecs-task-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-app-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbCustomersTable}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbFundsTable}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTransactionsTable}
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: "*"
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${ProjectName}-task
+      RequiresCompatibilities: [FARGATE]
+      Cpu: !Ref Cpu
+      Memory: !Ref Memory
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !GetAtt EcsExecutionRole.Arn
+      TaskRoleArn: !GetAtt EcsTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub ${ProjectName}-container
+          Image: !Ref ContainerImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: !Ref SpringProfilesActive
+            - Name: BUSINESS_INITIAL_BALANCE
+              Value: !Ref BusinessInitialBalance
+            - Name: SES_MAIL
+              Value: !Ref SesMail
+            - Name: TWILIO_PHONE
+              Value: !Ref TwilioPhone
+            - Name: DYNAMODB_CUSTOMERS_TABLE
+              Value: !Ref DynamodbCustomersTable
+            - Name: DYNAMODB_FUNDS_TABLE
+              Value: !Ref DynamodbFundsTable
+            - Name: DYNAMODB_TRANSACTIONS_TABLE
+              Value: !Ref DynamodbTransactionsTable
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_ENDPOINT
+              Value: !Sub https://dynamodb.${AWS::Region}.amazonaws.com
+            - Name: AWS_SES_ENDPOINT
+              Value: !Sub https://email.${AWS::Region}.amazonaws.com
+            - Name: TWILIO_SID
+              Value: !Ref TwilioSid
+            - Name: TWILIO_TOKEN
+              Value: !Ref TwilioToken
+            - Name: TWILIO_MESSAGING_SERVICE_SID
+              Value: !Ref TwilioMessagingServiceSid
+            - Name: JWT_SECRET
+              Value: !Ref JwtSecret
+            - Name: JWT_EXPIRATION
+              Value: !Ref JwtExpiration
+            - Name: DEMO_USERNAME
+              Value: !Ref DemoUsername
+            - Name: DEMO_PASSWORD
+              Value: !Ref DemoPassword
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: HttpListener
+    Properties:
+      Cluster: !Ref Cluster
+      ServiceName: !Sub ${ProjectName}-service
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      HealthCheckGracePeriodSeconds: !Ref HealthCheckGracePeriodSeconds
+      TaskDefinition: !Ref TaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ServiceSecurityGroup
+          Subnets: !Ref PublicSubnets
+      LoadBalancers:
+        - ContainerName: !Sub ${ProjectName}-container
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  AlbDnsName:
+    Description: URL base del backend
+    Value: !Sub http://${LoadBalancer.DNSName}
+  ClusterName:
+    Description: Cluster ECS
+    Value: !Ref Cluster
+  ServiceName:
+    Description: Servicio ECS
+    Value: !Ref Service
